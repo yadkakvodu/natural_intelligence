@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Новостной консультант — Альфа-Банк Бизнес</title>
+  <link rel="icon" href="assets/chat-alfa.png">
+  <link rel="stylesheet" href="../static/style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar" aria-label="Боковая панель">
+    <a class="brand" href="#consultant" aria-label="Альфа-Банк Бизнес">
+      <img src="assets/alfa-logo.png" alt="" width="33" height="47">
+      <span>Альфа-Банк<br>Бизнес</span>
+    </a>
+    <nav aria-label="Главное меню">
+      <button type="button" data-section="Главная">Главная</button>
+      <button type="button" data-section="Счета">Счета</button>
+      <button type="button" data-section="Платежи в работе">Платежи в работе</button>
+      <button type="button" data-section="Выписка">Выписка</button>
+      <button type="button" data-section="Аналитика">Аналитика</button>
+      <a href="#consultant" class="nav-current" aria-current="page">Новостной консультант</a>
+      <button type="button" data-section="Контрагенты">Контрагенты</button>
+      <button type="button" data-section="Тариф">Тариф</button>
+      <button type="button" data-section="Продукты">Продукты</button>
+      <button type="button" data-section="Клуб клиентов">Клуб клиентов</button>
+      <button type="button" data-section="Благотворительность">Благотворительность</button>
+    </nav>
+    <button class="previous-version" type="button" data-section="Предыдущая версия">Предыдущая версия</button>
+  </aside>
+
+  <main id="consultant" class="workspace">
+    <header class="page-header">
+      <div class="page-heading">
+        <h1>Новостной консультант</h1>
+        <p>Ключевые события и их влияние на ваш бизнес</p>
+      </div>
+      <div class="account">
+        <div class="company-wrapper">
+          <button class="company-button" id="company-button" type="button" aria-expanded="false" aria-controls="company-menu">
+            ООО "ТрансЛогистик" <img src="assets/chevron.png" alt="" width="16" height="13">
+          </button>
+          <div id="company-menu" class="popover company-menu" hidden><span>Текущая компания</span><strong>ООО «ТрансЛогистик»</strong></div>
+        </div>
+        <button id="logout-button" class="icon-button logout" type="button" aria-label="Выйти"><img src="assets/logout.png" width="31" height="29" alt=""></button>
+      </div>
+    </header>
+
+    <div class="columns">
+      <section class="panel feed" aria-labelledby="feed-heading">
+        <header class="feed-header">
+          <h2 id="feed-heading">Новостная лента</h2>
+          <button class="icon-button filter-button" id="filter-button" type="button" aria-label="Фильтры новостной ленты" aria-expanded="false" aria-controls="filter-menu"><img src="assets/filter.png" alt="" width="22" height="19"></button>
+          <form id="filter-menu" class="popover filter-menu" hidden>
+            <label>Тип новости<select id="impact-filter"><option value="all">Все новости</option><option value="risk">Критично</option><option value="regulation">Регулирование</option><option value="opportunity">Возможность</option></select></label>
+            <label>Сортировка<select id="news-sort"><option value="relevance">По релевантности</option><option value="date">По дате</option></select></label>
+            <button type="reset">Сбросить фильтры</button>
+          </form>
+        </header>
+        <div class="news-list" role="list" aria-label="Новости">
+          <div role="listitem" class="news-row" data-impact="risk" data-score="92" data-date="2024-04-25">
+            <button type="button" class="news-item selected" data-news="rate" aria-pressed="true">
+              <img class="news-thumbnail" src="assets/bank-building.png" alt="Здание Банка России с российским флагом" width="98" height="100">
+              <span class="news-copy"><span class="news-title">Для ТрансЛогистик<br> кредиты и лизинг останутся<br> дорогими, но депозиты<br> станут выгоднее</span><span class="news-info">Релевантность <strong>92%</strong><span class="badge critical">критично</span></span><time datetime="2024-04-25">25 апреля 2024</time></span>
+            </button>
+          </div>
+          <div role="listitem" class="news-row" data-impact="regulation" data-score="78" data-date="2024-04-24">
+            <button type="button" class="news-item" data-news="border" aria-pressed="false">
+              <img class="news-thumbnail" src="assets/containers.png" alt="Портовые краны и грузовые контейнеры" width="98" height="97">
+              <span class="news-copy"><span class="news-title">Новые требования<br> к перевозкам товаров<br> через границу</span><span class="news-info">Релевантность 78%</span><span class="badge regulation">регулирование</span><time datetime="2024-04-24">24 апреля 2024</time></span>
+            </button>
+          </div>
+          <div role="listitem" class="news-row" data-impact="opportunity" data-score="76" data-date="2024-04-22">
+            <button type="button" class="news-item" data-news="corridor" aria-pressed="false">
+              <img class="news-thumbnail" src="assets/truck.png" alt="Грузовик на трассе на закате" width="98" height="97">
+              <span class="news-copy"><span class="news-title">Коридор Север – Юг<br> может удешевить<br> доставку в Азию</span><span class="news-info">Релевантность 76%</span><span class="badge opportunity">возможность</span><time datetime="2024-04-22">22 апреля 2024</time></span>
+            </button>
+          </div>
+          <div role="listitem" class="news-row" data-impact="risk" data-score="68" data-date="2024-04-20">
+            <button type="button" class="news-item" data-news="fuel" aria-pressed="false">
+              <img class="news-thumbnail" src="assets/fuel.png" alt="Топливные пистолеты на заправке" width="98" height="97">
+              <span class="news-copy"><span class="news-title">Цены на топливо<br> продолжают расти</span><span class="news-info">Релевантность 68%</span><span class="badge critical">критично</span><time datetime="2024-04-20">20 апреля 2024</time></span>
+            </button>
+          </div>
+          <div role="listitem" class="news-row" data-impact="opportunity" data-score="62" data-date="2024-04-18">
+            <button type="button" class="news-item" data-news="support" aria-pressed="false">
+              <img class="news-thumbnail" src="assets/coins.png" alt="Стопки монет и график роста" width="98" height="96">
+              <span class="news-copy"><span class="news-title">Правительство поддержит<br> логистические компании<br> льготами</span><span class="news-info">Релевантность 62%</span><span class="badge opportunity">возможность</span><time datetime="2024-04-18">18 апреля 2024</time></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <article class="panel article-panel" aria-labelledby="article-heading">
+        <div class="article-meta"><span id="article-category" class="category">Экономика</span><time id="article-date" datetime="2024-04-25T12:30:00">25 апреля 2024, 12:30</time><a id="article-source" href="#sources"><img src="assets/source-external.png" alt="" width="20" height="18">Источник: Банк России</a></div>
+        <div class="article-intro">
+          <h2 id="article-heading">Для ООО ТрансЛогистик кредиты<br class="reference-break"> <span class="headline-second">и лизинг останутся дорогими,</span><br class="reference-break"> <span class="headline-final">но депозиты станут выгоднее</span></h2>
+          <p class="article-summary" id="article-summary">Банк России сохранил ключевую ставку на уровне 16%.<br class="reference-break"> <span class="summary-wide">Это значит, что стоимость кредитов и лизинга для компаний</span><br class="reference-break"> <span class="summary-wide">останется высокой, но размещение свободных средств</span><br class="reference-break"> <span class="summary-tail">на депозитах станет более выгодным.</span></p>
+        </div>
+        <div id="article-analysis">
+          <div class="analysis-cards">
+            <section class="analysis-card bank-position" aria-labelledby="bank-heading">
+              <h3 id="bank-heading"><img src="assets/bank-chart.png" alt="" width="28" height="29">Позиция Альфа-Банка</h3>
+              <p>Ожидаем, что высокая ключевая<br class="reference-break"> ставка сохранится дольше, чем<br class="reference-break"> рынок предполагает. Компаниям<br class="reference-break"> <span class="compact-line">стоит учитывать это при планировании</span><br class="reference-break"> заимствований или лизинга.</p>
+            </section>
+            <section class="analysis-card ai-conclusion" aria-labelledby="ai-heading">
+              <h3 id="ai-heading"><img src="assets/ai-sparkles.png" alt="" width="33" height="29">Вывод ИИ</h3>
+              <p>Для ООО ТрансЛогистик кредиты<br class="reference-break"> и лизинг останутся дорогими<br class="reference-break"> в ближайшие 6–12 месяцев.<br class="reference-break"> При этом депозиты и краткосрочные<br class="reference-break"> размещения свободных средств<br class="reference-break"> станут более выгодными.</p>
+            </section>
+          </div>
+          <section class="risk-opportunities" aria-labelledby="risk-heading">
+            <h3 id="risk-heading"><img src="assets/scales.png" width="33" height="28" alt="">Риски / Возможности</h3>
+            <div class="risk-columns">
+              <section class="risks"><h4><img src="assets/warning.png" width="32" height="27" alt="">Риски</h4><ul><li>Высокая стоимость новых кредитов<br class="reference-break"> и лизинга</li><li>Рост процентных нагрузок<br class="reference-break"> на оборотный капитал</li><li>Возможное замедление спроса<br class="reference-break"> на перевозки</li></ul></section>
+              <section class="opportunities"><h4><img src="assets/trend.png" width="31" height="27" alt="">Возможности</h4><ul><li>Более высокая доходность<br class="reference-break"> по депозитам</li><li>Возможность размещать свободные<br class="reference-break"> средства на выгодных условиях</li><li>Усиление финансовой устойчивости<br class="reference-break"> в текущих условиях</li></ul></section>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <aside class="panel chat-panel" aria-labelledby="chat-heading">
+        <h2 id="chat-heading"><img src="assets/chat.png" width="31" height="29" alt="">Чат с ИИ по этой новости</h2>
+        <div class="conversation" id="conversation" role="log" aria-label="Переписка по новости" aria-live="polite">
+          <div class="message user-message"><span class="avatar user-avatar"><img src="assets/chat-user.png" width="17" height="20" alt="Вы"></span><div class="message-body"><div class="bubble">Почему для нас депозиты становятся<br class="reference-break"> более выгодными при высокой<br class="reference-break"> ключевой ставке?</div><time>12:35</time></div></div>
+          <div class="message ai-message"><span class="avatar ai-avatar"><img src="assets/chat-alfa.png" width="24" height="30" alt="ИИ"></span><div class="message-body"><div class="bubble">При высокой ключевой ставке банки<br class="reference-break"> предлагают более высокие процентные<br class="reference-break"> ставки по депозитам. Это позволяет<br class="reference-break"> размещать свободные средства<br class="reference-break"> компании с большей доходностью<br class="reference-break"> и получать стабильный процентный<br class="reference-break"> доход с меньшим риском. В текущих<br class="reference-break"> условиях это может быть выгодной<br class="reference-break"> альтернативой, особенно если у вас<br class="reference-break"> есть временно свободная ликвидность.</div><time>12:36</time></div></div>
+        </div>
+        <section class="sources" id="sources" aria-labelledby="sources-heading">
+          <h3 id="sources-heading"><img src="assets/link.png" width="27" height="28" alt="">Источники</h3>
+          <a href="https://www.cbr.ru/" target="_blank" rel="noopener noreferrer"><img src="assets/external.png" width="23" height="20" alt=""><span>Банк России<small>Решение по ключевой ставке от 25.04.2024</small></span></a>
+          <a href="https://www.rbc.ru/" target="_blank" rel="noopener noreferrer"><img src="assets/external.png" width="23" height="20" alt=""><span>РБК<small>ЦБ сохранил ключевую ставку на уровне 16%</small></span></a>
+          <a href="https://alfabank.ru/" target="_blank" rel="noopener noreferrer"><img src="assets/external.png" width="23" height="20" alt=""><span>Альфа-Аналитика<small>Прогноз по денежно-кредитной политике</small></span></a>
+        </section>
+        <form class="chat-form" id="chat-form">
+          <label class="visually-hidden" for="chat-input">Вопрос по выбранной новости</label>
+          <textarea id="chat-input" rows="2" maxlength="2000" placeholder="Задайте вопрос по этой новости..."></textarea>
+          <button class="icon-button send-button" type="submit" aria-label="Отправить вопрос"><img src="assets/send.png" width="26" height="26" alt=""></button>
+        </form>
+      </aside>
+    </div>
+  </main>
+  <dialog id="info-dialog"><form method="dialog"><h2 id="dialog-title"></h2><p id="dialog-copy"></p><button autofocus>Понятно</button></form></dialog>
+</body>
+</html>
