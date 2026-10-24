@@ -1,6 +1,6 @@
-package repository;
+package com.example.demo.repository;
 
-import entity.News;
+import com.example.demo.entity.News;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

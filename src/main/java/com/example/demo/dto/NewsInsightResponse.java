@@ -1,81 +1,32 @@
-package dto;
-
+package com.example.demo.dto;
 
 import java.util.List;
 
-public class NewsFeedResponse {
-
-    private Pagination pagination;
-    private List<InsightItem> items;
-
-
-
-    public Pagination getPagination() {
-        return pagination;
-    }
-
-    public void setPagination(Pagination pagination) {
-        this.pagination = pagination;
-    }
-
-    public List<InsightItem> getItems() {
-        return items;
-    }
-
-    public void setItems(List<InsightItem> items) {
-        this.items = items;
-    }
-}
-
-class Pagination {
-    private int limit;
-    private int offset;
-    private long count;
-    // геттеры/
-
-    public int getLimit() {
-        return limit;
-    }
-
-    public void setLimit(int limit) {
-        this.limit = limit;
-    }
-
-    public int getOffset() {
-        return offset;
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
-    }
-
-    public long getCount() {
-        return count;
-    }
-
-    public void setCount(long count) {
-        this.count = count;
-    }
-}
-
-class InsightItem {
-    private String insightId;
-    private String newsId;
+public class NewsInsightResponse {
+    private String insightId;          // "insight_id"
+    private String newsId;             // "news_id"
     private String title;
     private String summary;
-    private String publishedAt;
+    private String publishedAt;        // "published_at"
     private String source;
-    private Boolean isAnalytics;
-    private Double relevanceScore;
-    private String relevanceLevel;
-    private List<SemanticTag> semanticTags;
+    private Boolean isAnalytics;       // "is_analytics"
+    private Double relevanceScore;     // "relevance_score"
+    private String relevanceLevel;     // "relevance_level"
+
+    private String whatHappened;       // "what_happened"
+    private String whyImportantForClient; // "why_important_for_client"
+
+    private List<String> risks;        // Массив строк
+    private List<String> opportunities;// Массив строк
+
+    private String bankPosition;       // "bank_position"
+
+    private List<SemanticTag> semanticTags; // "semantic_tags"
     private List<Source> sources;
-    // геттеры/сеттеры
 
     public String getInsightId() {
         return insightId;
     }
-
     public void setInsightId(String insightId) {
         this.insightId = insightId;
     }
@@ -144,6 +95,46 @@ class InsightItem {
         this.relevanceLevel = relevanceLevel;
     }
 
+    public String getWhatHappened() {
+        return whatHappened;
+    }
+
+    public void setWhatHappened(String whatHappened) {
+        this.whatHappened = whatHappened;
+    }
+
+    public String getWhyImportantForClient() {
+        return whyImportantForClient;
+    }
+
+    public void setWhyImportantForClient(String whyImportantForClient) {
+        this.whyImportantForClient = whyImportantForClient;
+    }
+
+    public List<String> getRisks() {
+        return risks;
+    }
+
+    public void setRisks(List<String> risks) {
+        this.risks = risks;
+    }
+
+    public List<String> getOpportunities() {
+        return opportunities;
+    }
+
+    public void setOpportunities(List<String> opportunities) {
+        this.opportunities = opportunities;
+    }
+
+    public String getBankPosition() {
+        return bankPosition;
+    }
+
+    public void setBankPosition(String bankPosition) {
+        this.bankPosition = bankPosition;
+    }
+
     public List<SemanticTag> getSemanticTags() {
         return semanticTags;
     }
@@ -160,6 +151,3 @@ class InsightItem {
         this.sources = sources;
     }
 }
-
-class Source {}
-class SemanticTag {}
