@@ -31,3 +31,20 @@ build/
 
 ### VS Code ###
 .vscode/
+
+src/main/resources/application.properties
+src/main/resources/application-*.properties
+.env
+
+target/
+*.class
+
+*.log
+
+.idea/
+*.iml
+*.iws
+
+.DS_Store
+
+.mvn/wrapper/maven-wrapper.jar
