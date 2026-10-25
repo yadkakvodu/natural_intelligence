@@ -11,7 +11,8 @@ public class ParamsDTO {
     public String getMessage() {
         return message;
     }
-
+    public Boolean getIsAnalyticsOnly() { return isAnalyticsOnly; }
+    public void setIsAnalyticsOnly(Boolean isAnalyticsOnly) { this.isAnalyticsOnly = isAnalyticsOnly; }
     public void setMessage(String message) {
         this.message = message;
     }
@@ -41,6 +42,4 @@ public class ParamsDTO {
     public String getTopicFilter() { return topicFilter; }
     public void setTopicFilter(String topicFilter) { this.topicFilter = topicFilter; }
 
-    public Boolean getIsAnalyticsOnly() { return isAnalyticsOnly; }
-    public void setIsAnalyticsOnly(Boolean isAnalyticsOnly) { this.isAnalyticsOnly = isAnalyticsOnly; }
 }

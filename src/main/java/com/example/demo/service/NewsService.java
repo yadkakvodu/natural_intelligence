@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.client.PythonClient;
 import com.example.demo.dto.*;
+import com.example.demo.entity.AgentTrace;
 import com.example.demo.entity.Client;
 import com.example.demo.entity.Message;
 import com.example.demo.entity.News;
@@ -21,33 +22,39 @@ public class NewsService {
     private final NewsRepository newsRepository;
     private final PythonClient pythonClient;
     private final MessageRepository messageRepository;
+    private final BudgetGuardService budgetGuardService;
+    private final AgentTraceRepository agentTraceRepository;
 
 
-    // <-- ДОБАВЛЕНО В КОНСТРУКТОР
     public NewsService(ClientRepository clientRepository, NewsRepository newsRepository,
-                       PythonClient pythonClient, MessageRepository messageRepository) {
+                       PythonClient pythonClient, MessageRepository messageRepository, BudgetGuardService budgetGuardService,
+                       AgentTraceRepository agentTraceRepository) {
         this.clientRepository = clientRepository;
         this.newsRepository = newsRepository;
         this.pythonClient = pythonClient;
         this.messageRepository = messageRepository;
+        this.budgetGuardService = budgetGuardService;
+        this.agentTraceRepository = agentTraceRepository;
     }
 
     public NewsFeedResponse generateNewsFeed(
             String syntheticU, int limit, int offset, String order, Boolean isAnalyticsOnly, String topic
     ) {
-        // 1. Достаем клиента из базы
-        Client client = clientRepository.findById(syntheticU)
-                .orElseThrow(() -> new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена"));
+        List<Object[]> result = clientRepository.findClientProfileRaw(syntheticU);
+        if (result.isEmpty()) {
+            throw new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена");
+        }
 
-        // 2. Собираем профиль (7 полей)
+        Object[] row = result.get(0); // Берем первую (и единственную) строку
+
         ClientProfileDTO profile = new ClientProfileDTO();
-        profile.setMainokvedCode(client.getMainOkvedCode());
-        profile.setMainokvedName(client.getMainOkvedCode());
-        profile.setHasCredits(Boolean.TRUE.equals(client.getClProductLoaMark()));
-        profile.setHasVed(Boolean.TRUE.equals(client.getFtsFlag()));
-        profile.setVedCountry(client.getFtsCountryName());
-        profile.setRevenue(client.getRevenueCompany() != null ? client.getRevenueCompany().longValue() : 0L);
-        profile.setGroupId(client.getGroupId());
+        profile.setMainokvedCode((String) row[1]);
+        profile.setMainokvedName((String) row[1]); // Используем код как имя
+        profile.setHasCredits((Boolean) row[2]);
+        profile.setHasVed((Boolean) row[3]);
+        profile.setVedCountry((String) row[4]);
+        profile.setRevenue(row[5] != null ? ((java.math.BigDecimal) row[5]).longValue() : 0L);
+        profile.setGroupId((String) row[6]);
 
         // 3. Формируем запрос к Python
         PythonRequestDTO pyRequest = new PythonRequestDTO();
@@ -61,6 +68,8 @@ public class NewsService {
         params.setTopicFilter(topic);
         params.setIsAnalyticsOnly(isAnalyticsOnly);
         pyRequest.setParams(params);
+
+        budgetGuardService.checkBudget(2000);
 
         // 4. Генерируем Trace ID и зовем Python
         String traceId = UUID.randomUUID().toString();
@@ -118,6 +127,16 @@ public class NewsService {
 
         // 6. Финальный ответ
         NewsFeedResponse response = new NewsFeedResponse();
+
+        AgentTrace trace = new AgentTrace();
+        trace.setTraceId(UUID.fromString(traceId)); // traceId, который мы генерировали
+        trace.setSyntheticU(syntheticU);
+        trace.setRequestType("feed");
+        trace.setTokensInput(pyResponse.getTokensInput());
+        trace.setTokensOutput(pyResponse.getTokensOutput());
+        trace.setCreatedAt(java.time.OffsetDateTime.now());
+// trace.setSteps(...) - тут можно сохранить JSON-шаги от Python
+        agentTraceRepository.save(trace);
         response.setItems(finalItems);
 
         Pagination pagination = new Pagination();
@@ -143,6 +162,7 @@ public class NewsService {
         profile.setVedCountry(client.getFtsCountryName());
         profile.setRevenue(client.getRevenueCompany() != null ? client.getRevenueCompany().longValue() : 0L);
         profile.setGroupId(client.getGroupId());
+        budgetGuardService.checkBudget(2000);
 
         // 3. Формируем запрос (request_type = insight)
         PythonRequestDTO pyRequest = new PythonRequestDTO();
@@ -194,7 +214,68 @@ public class NewsService {
     }
 
     public ChatResponseDTO generateChatAnswer(String syntheticU, String newsId, String message) {
-        return null;
+        // 1. Проверяем клиента
+        Client client = clientRepository.findById(syntheticU)
+                .orElseThrow(() -> new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена"));
+
+        // 2. Проверяем новость
+        News news = newsRepository.findById(newsId)
+                .orElseThrow(() -> new RuntimeException("Новость с идентификатором " + newsId + " не найдена"));
+
+        // 3. Формируем ID диалога
+        String conversationId = syntheticU + "_" + newsId;
+
+        // 4. Сохраняем вопрос пользователя в базу ДО вызова Python
+        Message userMsg = new Message();
+        userMsg.setConversationId(conversationId);
+        userMsg.setRole("user");
+        userMsg.setContent(message);
+        userMsg.setCreatedAt(java.time.OffsetDateTime.now());
+        messageRepository.save(userMsg);
+
+        // 5. Собираем профиль клиента (7 полей)
+        ClientProfileDTO profile = new ClientProfileDTO();
+        profile.setMainokvedCode(client.getMainOkvedCode());
+        profile.setMainokvedName(client.getMainOkvedCode());
+        profile.setHasCredits(Boolean.TRUE.equals(client.getClProductLoaMark()));
+        profile.setHasVed(Boolean.TRUE.equals(client.getFtsFlag()));
+        profile.setVedCountry(client.getFtsCountryName());
+        profile.setRevenue(client.getRevenueCompany() != null ? client.getRevenueCompany().longValue() : 0L);
+        profile.setGroupId(client.getGroupId());
+
+        // 6. Формируем запрос в Python
+        PythonRequestDTO pyRequest = new PythonRequestDTO();
+        pyRequest.setRequestType("chat");
+        pyRequest.setSyntheticU(syntheticU);
+        pyRequest.setClientProfile(profile);
+
+        ParamsDTO params = new ParamsDTO();
+        params.setNewsId(newsId);
+        params.setMessage(message);
+        pyRequest.setParams(params);
+
+        // 7. Зовем Python
+        String traceId = UUID.randomUUID().toString();
+        ChatResponseDTO pyResponse;
+        try {
+            pyResponse = pythonClient.generateChatAnswer(pyRequest, traceId);
+        } catch (Exception e) {
+            throw new RuntimeException("Сервис генерации ответов временно недоступен: " + e.getMessage());
+        }
+
+        // 8. Сохраняем ответ ассистента в базу
+        Message assistantMsg = new Message();
+        assistantMsg.setConversationId(conversationId);
+        assistantMsg.setRole("assistant");
+        assistantMsg.setContent(pyResponse.getContent());
+        assistantMsg.setCreatedAt(java.time.OffsetDateTime.now());
+        // Если Python вернул источники (citations), их можно сохранить как JSON-строку
+        // assistantMsg.setCitations(...);
+
+        messageRepository.save(assistantMsg);
+
+        // 9. Возвращаем ответ
+        return pyResponse;
     }
 
 
@@ -207,7 +288,6 @@ public class NewsService {
         newsRepository.findById(newsId)
                 .orElseThrow(() -> new RuntimeException("Новость с идентификатором " + newsId + " не найдена"));
 
-        // 2. Формируем правильный ID диалога (с разделителем '_')
         String conversationId = syntheticU + "_" + newsId;
 
         // 3. Настраиваем пагинацию для базы данных

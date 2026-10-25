@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface ClientRepository extends JpaRepository<Client, String> {
 
@@ -21,5 +23,5 @@ public interface ClientRepository extends JpaRepository<Client, String> {
         FROM clients 
         WHERE synthetic_u = :syntheticU
         """, nativeQuery = true)
-    Object findClientProfileRaw(@Param("syntheticU") String syntheticU);
+    List<Object[]> findClientProfileRaw(@Param("syntheticU") String syntheticU);
 }
