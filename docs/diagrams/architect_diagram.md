@@ -38,7 +38,7 @@ graph TD
     end
 
     subgraph "External Services"
-        LLM_API[Qwen3.6 / DeepSeek API]:::external
+        LLM_API["Qwen3.6 / DeepSeek API"]:::external
     end
 
     FE -- "1. GET /news-feed" --> J_API
@@ -51,14 +51,14 @@ graph TD
     J_Gate -- "Pass" --> J_Ctx
     J_Gate -- "429 Too Many Requests" -.-> FE
     
-    J_Ctx -- "SQL: SELECT profile, history, news_meta" --> DB
+    J_Ctx -- "SQL SELECT profile, history, news_meta" --> DB
     J_Ctx -- "Ready Prompt (Chat) / Params (Feed)" --> J_API
     
-    J_API -- "HTTP: Context + Profile + Ready Messages" --> P_API
+    J_API -- "HTTP Context + Profile + Ready Messages" --> P_API
     J_API -- "X-Trace-Id" --> P_API
 
-    P_API -- "Request Type: feed/insight/chat" --> P_RAG
-    P_API -- "Request Type: chat" --> P_LLM
+    P_API -- "Request Type feed/insight/chat" --> P_RAG
+    P_API -- "Request Type chat" --> P_LLM
     
     P_RAG -- "Vector Search + Rule Boosting" --> DB
     P_RAG -- "News Candidates" --> P_LLM
@@ -71,7 +71,7 @@ graph TD
     P_Log -- "Save Trace & Messages" --> DB
 
     P_API -- "Raw JSON Result" --> J_Trans
-    J_Trans -- "Transform: Add IDs, Levels, Pagination" --> J_API
+    J_Trans -- "Transform Add IDs, Levels, Pagination" --> J_API
     J_API -- "200 OK GetAnalyst Response" --> FE
 
     subgraph "Ingest Pipeline (One-time)"
