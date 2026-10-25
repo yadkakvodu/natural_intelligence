@@ -101,6 +101,7 @@ async function loadNewsFromBackend() {
 function attachClickListenersToNews() {
   document.querySelectorAll("[data-news]").forEach((button) => {
     button.addEventListener("click", async () => {
+      // Визуальное выделение
       document.querySelectorAll("[data-news]").forEach((item) => {
         const selected = item === button;
         item.classList.toggle("selected", selected);
@@ -110,24 +111,63 @@ function attachClickListenersToNews() {
       const clientId = document.getElementById('client-id-input').value.trim() || 'U_80';
       const newsId = button.dataset.news;
 
-      if ($("#article-heading")) $("#article-heading").textContent = "Загрузка...";
-      if ($("#article-summary")) $("#article-summary").textContent = "";
-
       try {
+        // 1. Делаем запрос ко второму эндпоинту
         const response = await fetch(`/api/clients/${clientId}/news/${newsId}/insight`);
         if (!response.ok) throw new Error("Ошибка загрузки инсайта");
 
+        // 2. Получаем JSON
         const insight = await response.json();
         console.log("Детальный инсайт:", insight);
 
+        // 3. Обновляем заголовок и описание
         if ($("#article-heading")) $("#article-heading").textContent = insight.title;
         if ($("#article-summary")) $("#article-summary").textContent = insight.summary;
 
-        // TODO: Обновить блоки Риски/Возможности (для этого нужно добавить ID в HTML)
+        // 4. Позиция банка
+        if ($("#bank-position-text")) {
+          $("#bank-position-text").textContent = insight.bankPosition || "Позиция банка не предоставлена.";
+        }
+
+        // 5. Вывод ИИ (почему важно)
+        if ($("#ai-conclusion-text")) {
+          $("#ai-conclusion-text").textContent = insight.whyImportantForClient || "Анализ ИИ недоступен.";
+        }
+
+        // 6. Риски
+        const risksList = $("#risks-list");
+        if (risksList) {
+          risksList.innerHTML = ''; // Очищаем старые
+          if (insight.risks && insight.risks.length > 0) {
+            insight.risks.forEach(risk => {
+              const li = document.createElement('li');
+              li.textContent = risk;
+              risksList.appendChild(li);
+            });
+          } else {
+            risksList.innerHTML = '<li>Риски не выявлены</li>';
+          }
+        }
+
+        // 7. Возможности
+        const oppsList = $("#opportunities-list");
+        if (oppsList) {
+          oppsList.innerHTML = ''; // Очищаем старые
+          if (insight.opportunities && insight.opportunities.length > 0) {
+            insight.opportunities.forEach(opp => {
+              const li = document.createElement('li');
+              li.textContent = opp;
+              oppsList.appendChild(li);
+            });
+          } else {
+            oppsList.innerHTML = '<li>Возможности не выявлены</li>';
+          }
+        }
+
       } catch (error) {
         console.error(error);
         if ($("#article-heading")) $("#article-heading").textContent = "Ошибка загрузки";
-        if ($("#article-summary")) $("#article-summary").textContent = "Не удалось получить разбор.";
+        if ($("#article-summary")) $("#article-summary").textContent = "Не удалось получить разбор от AI-сервиса.";
       }
     });
   });
@@ -229,19 +269,50 @@ function appendMessage(text, sender) {
 }
 
 if ($("#chat-form")) {
-  $("#chat-form").addEventListener("submit", (event) => {
+  $("#chat-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const textInput = $("#chat-input");
     if (!textInput) return;
 
-    const text = textInput.value.trim();
-    if (!text) { textInput.focus(); return; }
+    const message = textInput.value.trim();
+    if (!message) { textInput.focus(); return; }
 
-    appendMessage(text, "user");
-    appendMessage("Это демо-режим. Бэкенд для чата еще не подключен.", "ai");
+    // 1. Показываем сообщение пользователя
+    appendMessage(message, "user");
     textInput.value = "";
     $("#conversation").scrollTop = $("#conversation").scrollHeight;
-    textInput.focus();
+
+    // 2. Получаем текущий ID клиента и выбранной новости
+    const clientId = document.getElementById('client-id-input').value.trim() || 'U_80';
+    const selectedBtn = document.querySelector('.news-item.selected');
+    const newsId = selectedBtn ? selectedBtn.dataset.news : 'news_0131ff569124bbb0'; // Если новость не выбрана, берем ID по умолчанию
+
+    try {
+      // 3. Отправляем POST-запрос на Java
+      const response = await fetch(`/api/clients/${clientId}/news/${newsId}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: message })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ошибка сервера: ${response.status}`);
+      }
+
+      // 4. Получаем ответ и показываем его
+      const data = await response.json();
+      console.log("Ответ от ИИ:", data);
+
+      appendMessage(data.content, "ai");
+
+    } catch (error) {
+      console.error(error);
+      appendMessage("Извините, произошла ошибка при связи с сервером.", "ai");
+    }
+
+    $("#conversation").scrollTop = $("#conversation").scrollHeight;
   });
 }
 

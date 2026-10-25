@@ -18,8 +18,8 @@ public class PythonClient {
     public PythonClient() {
         // 1. Настраиваем таймауты согласно ТЗ (п. 5)
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofSeconds(3));
-        requestFactory.setReadTimeout(Duration.ofSeconds(15));
+        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+        requestFactory.setReadTimeout(Duration.ofSeconds(60)); // <--- УВЕЛИЧЬТЕ ДО 60
 
         // 2. Настраиваем базовый URL.
         // ВАЖНО: Когда друг даст вам IP, вы замените строку ниже.

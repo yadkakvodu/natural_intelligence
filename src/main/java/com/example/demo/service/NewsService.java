@@ -187,6 +187,7 @@ public class NewsService {
         try {
             pyResponse = pythonClient.generateInsight(pyRequest, traceId);
         } catch (Exception e) {
+            e.printStackTrace(); // <--- ДОБАВЬТЕ ЭТУ СТРОКУ
             throw new RuntimeException("Сервис генерации инсайтов недоступен: " + e.getMessage());
         }
 
