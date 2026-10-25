@@ -11,21 +11,30 @@ graph TD
     end
 
     subgraph "Java Orchestrator (API Gateway)"
-        J_API[Spring Boot API<br/>GetAnalyst Standard]:::java
-        J_Gate[Budget Guard &<br/>Rate Limiter]:::java
-        J_Ctx[Context Builder<br/>(PromptBuilderService)]:::java
-        J_Trans[Response Transformer<br/>(Pagination, IDs)]:::java
+        J_API["Spring Boot API
+        GetAnalyst Standard"]:::java
+        J_Gate["Budget Guard &
+        Rate Limiter"]:::java
+        J_Ctx["Context Builder
+        (PromptBuilderService)"]:::java
+        J_Trans["Response Transformer
+        (Pagination, IDs)"]:::java
     end
 
     subgraph "Python AI Core (Executor)"
-        P_API[FastAPI Internal<br/>/internal/v1/generate]:::python
-        P_RAG[RAG Service<br/>(Vector Search + Boosting)]:::python
-        P_LLM[LLM Executor<br/>(DeepSeek/Qwen)]:::python
-        P_Log[Async Logger<br/>(Traces & Messages)]:::python
+        P_API["FastAPI Internal
+        /internal/v1/generate"]:::python
+        P_RAG["RAG Service
+        (Vector Search + Boosting)"]:::python
+        P_LLM["LLM Executor
+        (DeepSeek/Qwen)"]:::python
+        P_Log["Async Logger
+        (Traces & Messages)"]:::python
     end
 
     subgraph "Data Layer"
-        DB[(PostgreSQL + pgvector<br/>6 Tables)]:::db
+        DB[("PostgreSQL + pgvector
+        6 Tables")]:::db
     end
 
     subgraph "External Services"
