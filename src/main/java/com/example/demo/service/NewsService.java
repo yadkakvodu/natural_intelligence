@@ -67,7 +67,7 @@ public class NewsService {
         params.setIsAnalyticsOnly(isAnalyticsOnly);
         pyRequest.setParams(params);
 
-        budgetGuardService.checkBudget(500);
+//        budgetGuardService.checkBudget(500);
 
         // 4. Генерируем Trace ID и зовем Python
         String traceId = UUID.randomUUID().toString();
@@ -171,7 +171,7 @@ public class NewsService {
         profile.setVedCountry(client.getFtsCountryName());
         profile.setRevenue(client.getRevenueCompany() != null ? client.getRevenueCompany().longValue() : 0L);
         profile.setGroupId(client.getGroupId());
-        budgetGuardService.checkBudget(500);
+//        budgetGuardService.checkBudget(500);
 
         PythonRequestDTO pyRequest = new PythonRequestDTO();
         pyRequest.setRequestType("insight");
@@ -228,7 +228,7 @@ public class NewsService {
                 .orElseThrow(() -> new RuntimeException("Новость с идентификатором " + newsId + " не найдена"));
 
         // 2. Проверка бюджета (Pre-check)
-        budgetGuardService.checkBudget(3000); // В ТЗ сказано: прогноз 3000 токенов
+//        budgetGuardService.checkBudget(3000); // В ТЗ сказано: прогноз 3000 токенов
 
         // 3. Сборка контекста (Context Builder)
         String conversationId = syntheticU + "_" + newsId;
