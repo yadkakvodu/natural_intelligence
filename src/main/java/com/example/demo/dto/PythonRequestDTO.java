@@ -5,6 +5,10 @@ public class PythonRequestDTO {
     private String syntheticU;
     private ClientProfileDTO clientProfile;
     private ParamsDTO params;
+    private LlmRequestDTO llmRequest;
+
+    public LlmRequestDTO getLlmRequest() { return llmRequest; }
+    public void setLlmRequest(LlmRequestDTO llmRequest) { this.llmRequest = llmRequest; }
 
     public String getRequestType() { return requestType; }
     public void setRequestType(String requestType) { this.requestType = requestType; }

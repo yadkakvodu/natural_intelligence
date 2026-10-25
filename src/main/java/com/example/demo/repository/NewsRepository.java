@@ -26,4 +26,5 @@ public interface NewsRepository extends JpaRepository<News, String> {
     );
 
 
+
 }

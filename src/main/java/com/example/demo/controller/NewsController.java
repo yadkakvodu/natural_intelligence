@@ -107,4 +107,22 @@ public class NewsController {
 
 
     }
+
+    @GetMapping("/news/{news_id}/sources")
+    public ResponseEntity<List<SourceResponseDTO>> getSources(
+            @PathVariable("synthetic_u") String syntheticU,
+            @PathVariable("news_id") String newsId
+    ) {
+        // Валидация
+        if (!syntheticU.matches("^U_[A-Z0-9]+$")) {
+            throw new IllegalArgumentException("Неверный формат synthetic_u");
+        }
+        if (newsId == null || newsId.isBlank()) {
+            throw new IllegalArgumentException("Неверный формат news_id");
+        }
+
+        List<SourceResponseDTO> response = newsService.getSources(syntheticU, newsId);
+        return ResponseEntity.ok(response);
+    }
+
 }

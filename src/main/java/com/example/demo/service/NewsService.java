@@ -69,7 +69,7 @@ public class NewsService {
         params.setIsAnalyticsOnly(isAnalyticsOnly);
         pyRequest.setParams(params);
 
-        budgetGuardService.checkBudget(2000);
+        budgetGuardService.checkBudget(500);
 
         // 4. Генерируем Trace ID и зовем Python
         String traceId = UUID.randomUUID().toString();
@@ -117,7 +117,6 @@ public class NewsService {
             }
         }
 
-        // 5.3. Сортировка
         if ("published_at,desc".equals(order) || "date".equals(order)) {
             finalItems.sort((a, b) -> {
                 if (a.getPublishedAt() == null || b.getPublishedAt() == null) return 0;
@@ -125,7 +124,6 @@ public class NewsService {
             });
         }
 
-        // 6. Финальный ответ
         NewsFeedResponse response = new NewsFeedResponse();
 
         AgentTrace trace = new AgentTrace();
@@ -162,19 +160,17 @@ public class NewsService {
         profile.setVedCountry(client.getFtsCountryName());
         profile.setRevenue(client.getRevenueCompany() != null ? client.getRevenueCompany().longValue() : 0L);
         profile.setGroupId(client.getGroupId());
-        budgetGuardService.checkBudget(2000);
+        budgetGuardService.checkBudget(500);
 
-        // 3. Формируем запрос (request_type = insight)
         PythonRequestDTO pyRequest = new PythonRequestDTO();
-        pyRequest.setRequestType("insight"); // <--- ВАЖНО
+        pyRequest.setRequestType("insight");
         pyRequest.setSyntheticU(syntheticU);
         pyRequest.setClientProfile(profile);
 
         ParamsDTO params = new ParamsDTO();
-        params.setNewsId(newsId); // <--- Передаем ID новости
+        params.setNewsId(newsId);
         pyRequest.setParams(params);
 
-        // 4. Зовем Python
         String traceId = UUID.randomUUID().toString();
         PythonInsightResponseDTO pyResponse;
         try {
@@ -183,7 +179,6 @@ public class NewsService {
             throw new RuntimeException("Сервис генерации инсайтов недоступен: " + e.getMessage());
         }
 
-        // 5. Трансформация (ТЗ п. 6)
         NewsInsightResponse response = new NewsInsightResponse();
         response.setNewsId(pyResponse.getNewsId());
         response.setTitle(pyResponse.getTitle());
@@ -192,7 +187,6 @@ public class NewsService {
         response.setSource(pyResponse.getSource());
         response.setAnalytics(pyResponse.getIsAnalytics());
 
-        // Генерируем ID и вычисляем уровень
         response.setInsightId(UUID.randomUUID().toString());
         double score = pyResponse.getRelevanceScore() != null ? pyResponse.getRelevanceScore() : 0.0;
         response.setRelevanceScore(score);
@@ -214,47 +208,54 @@ public class NewsService {
     }
 
     public ChatResponseDTO generateChatAnswer(String syntheticU, String newsId, String message) {
-        // 1. Проверяем клиента
-        Client client = clientRepository.findById(syntheticU)
-                .orElseThrow(() -> new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена"));
-
-        // 2. Проверяем новость
+        // 1. Валидация клиента и новости (Gatekeeper)
+        if (!clientRepository.existsById(syntheticU)) {
+            throw new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена");
+        }
         News news = newsRepository.findById(newsId)
                 .orElseThrow(() -> new RuntimeException("Новость с идентификатором " + newsId + " не найдена"));
 
-        // 3. Формируем ID диалога
+        // 2. Проверка бюджета (Pre-check)
+        budgetGuardService.checkBudget(3000); // В ТЗ сказано: прогноз 3000 токенов
+
+        // 3. Сборка контекста (Context Builder)
         String conversationId = syntheticU + "_" + newsId;
 
-        // 4. Сохраняем вопрос пользователя в базу ДО вызова Python
-        Message userMsg = new Message();
-        userMsg.setConversationId(conversationId);
-        userMsg.setRole("user");
-        userMsg.setContent(message);
-        userMsg.setCreatedAt(java.time.OffsetDateTime.now());
-        messageRepository.save(userMsg);
+        // Получаем историю диалога (последние 10 сообщений)
+        List<Message> history = messageRepository.findTop10ByConversationIdOrderByCreatedAtAsc(conversationId);
 
-        // 5. Собираем профиль клиента (7 полей)
-        ClientProfileDTO profile = new ClientProfileDTO();
-        profile.setMainokvedCode(client.getMainOkvedCode());
-        profile.setMainokvedName(client.getMainOkvedCode());
-        profile.setHasCredits(Boolean.TRUE.equals(client.getClProductLoaMark()));
-        profile.setHasVed(Boolean.TRUE.equals(client.getFtsFlag()));
-        profile.setVedCountry(client.getFtsCountryName());
-        profile.setRevenue(client.getRevenueCompany() != null ? client.getRevenueCompany().longValue() : 0L);
-        profile.setGroupId(client.getGroupId());
+        // Формируем массив сообщений для LLM
+        List<LlmMessageDTO> llmMessages = new ArrayList<>();
 
-        // 6. Формируем запрос в Python
+        // 3.1. Системный промпт (по ТЗ)
+        String systemPrompt = String.format(
+                "Ты финансовый советник Альфа-Банка. Новость: '%s'. Кратко: '%s'. Отвечай СТРОГО в контексте этой новости.",
+                news.getTitle(), news.getSummary()
+        );
+        llmMessages.add(new LlmMessageDTO("system", systemPrompt));
+
+        // 3.2. История диалога (добавляем то, что уже было сказано)
+        for (Message msg : history) {
+            llmMessages.add(new LlmMessageDTO(msg.getRole(), msg.getContent()));
+        }
+
+        // 3.3. Новый вопрос пользователя
+        llmMessages.add(new LlmMessageDTO("user", message));
+
+        // 4. Формируем запрос к Python
         PythonRequestDTO pyRequest = new PythonRequestDTO();
         pyRequest.setRequestType("chat");
         pyRequest.setSyntheticU(syntheticU);
+
+        // (Клиентский профиль тоже можно передать, если Python его использует)
+        ClientProfileDTO profile = new ClientProfileDTO(); // ... заполнить ...
         pyRequest.setClientProfile(profile);
 
-        ParamsDTO params = new ParamsDTO();
-        params.setNewsId(newsId);
-        params.setMessage(message);
-        pyRequest.setParams(params);
+        LlmRequestDTO llmRequest = new LlmRequestDTO();
+        llmRequest.setMessages(llmMessages);
+        pyRequest.setLlmRequest(llmRequest);
 
-        // 7. Зовем Python
+        // 5. Вызов Python
         String traceId = UUID.randomUUID().toString();
         ChatResponseDTO pyResponse;
         try {
@@ -263,18 +264,10 @@ public class NewsService {
             throw new RuntimeException("Сервис генерации ответов временно недоступен: " + e.getMessage());
         }
 
-        // 8. Сохраняем ответ ассистента в базу
-        Message assistantMsg = new Message();
-        assistantMsg.setConversationId(conversationId);
-        assistantMsg.setRole("assistant");
-        assistantMsg.setContent(pyResponse.getContent());
-        assistantMsg.setCreatedAt(java.time.OffsetDateTime.now());
-        // Если Python вернул источники (citations), их можно сохранить как JSON-строку
-        // assistantMsg.setCitations(...);
+        // 6. ВАЖНО: По ТЗ v3.0 Java НЕ сохраняет сообщения в БД.
+        // Это делает Python асинхронно.
 
-        messageRepository.save(assistantMsg);
-
-        // 9. Возвращаем ответ
+        // 7. Возвращаем ответ фронтенду
         return pyResponse;
     }
 
@@ -333,4 +326,62 @@ public class NewsService {
 
         return response;
     }
+
+    public List<SourceResponseDTO> getSources(String syntheticU, String newsId) {
+        // 1. Проверяем клиента
+        clientRepository.findById(syntheticU)
+                .orElseThrow(() -> new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена"));
+
+        // 2. Проверяем текущую новость
+        News currentNews = newsRepository.findById(newsId)
+                .orElseThrow(() -> new RuntimeException("Новость с идентификатором " + newsId + " не найдена"));
+
+        List<SourceResponseDTO> sources = new ArrayList<>();
+
+        // 3. Добавляем саму текущую новость как первый источник
+        sources.add(mapToSourceDTO(currentNews));
+
+        // 4. Достаем 2-3 смежные новости (для простоты берем просто последние из базы)
+        // В реальном проекте тут был бы запрос по совпадению тегов (topics)
+        List<News> relatedNews = newsRepository.findAll(PageRequest.of(0, 3)).getContent();
+
+        for (News news : relatedNews) {
+            // Чтобы не дублировать текущую новость в списке
+            if (!news.getNewsId().equals(newsId)) {
+                sources.add(mapToSourceDTO(news));
+            }
+        }
+
+        // 5. Сортируем: сначала аналитика Альфа-Банка, потом остальные (по ТЗ)
+        sources.sort((a, b) -> {
+            boolean aIsAlfa = "alfa_analytics".equals(a.getType());
+            boolean bIsAlfa = "alfa_analytics".equals(b.getType());
+            if (aIsAlfa && !bIsAlfa) return -1;
+            if (!aIsAlfa && bIsAlfa) return 1;
+            return 0;
+        });
+
+        return sources;
+    }
+
+    // Вспомогательный метод для маппинга Entity в DTO
+    private SourceResponseDTO mapToSourceDTO(News news) {
+        SourceResponseDTO dto = new SourceResponseDTO();
+        dto.setId(news.getNewsId());
+        dto.setTitle(news.getTitle());
+        dto.setName(news.getSource()); // Название источника (РБК, Альфа-Банк и т.д.)
+        dto.setPublishedAt(news.getPublishedAt() != null ? news.getPublishedAt().toString() : null);
+
+        // Определяем тип (по ТЗ: alfa_analytics / regulator / media)
+        if (Boolean.TRUE.equals(news.getAnalytics())) {
+            dto.setType("alfa_analytics");
+        } else if (news.getSource() != null && news.getSource().contains("Банк России")) {
+            dto.setType("regulator");
+        } else {
+            dto.setType("media");
+        }
+
+        return dto;
+    }
+
 }
