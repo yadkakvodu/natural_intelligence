@@ -1,0 +1,694 @@
+openapi: 3.0.3
+info:
+  title: Новостной консультант Альфа-Банка API
+  version: 3.0.0
+  description: |
+    API для персонализированной новостной аналитики крупного бизнеса.
+    Реализует стандарт GetAnalyst с поддержкой AI-инсайтов, чата и трассируемости.
+  contact:
+    name: Системный Аналитик
+
+servers:
+  - url: 
+    description: Demo Server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: News Feed
+    description: Персонализированная новостная лента
+  - name: Insights
+    description: Детальные бизнес-инсайты и источники
+  - name: Chat
+    description: Интерактивный чат с AI-ассистентом
+  - name: Internal API
+    description: Внутренний контракт Java Orchestrator ↔ Python AI Core
+
+paths:
+  /clients/{synthetic_u}/news-feed:
+    get:
+      tags:
+        - News Feed
+      summary: Получить персонализированную новостную ленту
+      parameters:
+        - name: synthetic_u
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^U_[A-Z0-9]+$"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+            minimum: 1
+            maximum: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: order
+          in: query
+          schema:
+            type: string
+            default: "relevance_score,desc"
+            enum:
+              - "relevance_score,desc"
+              - "published_at,desc"
+        - name: is_analytics_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: topic
+          in: query
+          schema:
+            type: string
+            enum:
+              - cbr_rate
+              - ved_china
+              - oil
+              - macro
+              - taxes
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsFeedResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /clients/{synthetic_u}/news/{news_id}/insight:
+    get:
+      tags:
+        - Insights
+      summary: Получить персонализированный бизнес-инсайт по новости
+      parameters:
+        - name: synthetic_u
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^U_[A-Z0-9]+$"
+        - name: news_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]+$"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsightDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /clients/{synthetic_u}/news/{news_id}/chat:
+    post:
+      tags:
+        - Chat
+      summary: Задать уточняющий вопрос по новости
+      parameters:
+        - name: synthetic_u
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^U_[A-Z0-9]+$"
+        - name: news_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]+$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /clients/{synthetic_u}/news/{news_id}/chat-history:
+    get:
+      tags:
+        - Chat
+      summary: Получить историю чата по новости
+      parameters:
+        - name: synthetic_u
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^U_[A-Z0-9]+$"
+        - name: news_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]+$"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatHistoryResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /clients/{synthetic_u}/news/{news_id}/sources:
+    get:
+      tags:
+        - Insights
+      summary: Получить источники инсайта
+      parameters:
+        - name: synthetic_u
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^U_[A-Z0-9]+$"
+        - name: news_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]+$"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Source"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /internal/v1/generate:
+    post:
+      tags:
+        - Internal API
+      summary: Единый эндпоинт генерации (Java → Python)
+      description: |
+        Внутренний контракт. 
+        - Для feed/insight: передает params и profile.
+        - Для chat: передает готовый llm_request.messages.
+      parameters:
+        - name: X-Trace-Id
+          in: header
+          required: true
+          description: UUID для сквозной трассировки в agent_traces.
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalGenerateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalGenerateResponse"
+        "400":
+          description: Неверный request_type или отсутствующие params
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: LLM недоступна
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        В боевой системе используется JWT-токен. 
+        Для демо-стенда хакатона валидация отключена.
+
+  responses:
+    BadRequest:
+      description: Неверный формат параметров
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: Превышен лимит запросов или бюджета LLM
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServiceUnavailable:
+      description: Сервис генерации временно недоступен
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+      example:
+        errorMessage: "Компания с идентификатором U_80 не найдена"
+
+    Pagination:
+      type: object
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        count:
+          type: integer
+          description: Общее количество элементов до обрезки лимитом
+      example:
+        limit: 5
+        offset: 0
+        count: 12
+
+    SemanticTag:
+      type: object
+      properties:
+        tag:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+        influence_weight:
+          type: number
+          format: float
+      example:
+        tag: "cl_product_loa_mark"
+        label: "Наличие кредитов"
+        influence_weight: 0.4
+
+    Source:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - alfa_analytics
+            - external_news
+            - regulator
+            - media
+        title:
+          type: string
+        published_at:
+          type: string
+          format: date-time
+      example:
+        id: "alfa-macro-2026-09-07"
+        name: "Альфа-Банк"
+        type: "alfa_analytics"
+        title: "Ключевая ставка ЦБ РФ: ставка без изменения"
+        published_at: "2026-09-07T10:00:00Z"
+
+    Citation:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+          enum:
+            - alfa_analytics
+            - external_news
+            - regulator
+      example:
+        id: "rbc-trade-china-2026"
+        title: "Логистические цепочки РФ-Китай: прогноз на Q4"
+        type: "external_news"
+
+    NewsFeedItem:
+      type: object
+      properties:
+        insight_id:
+          type: string
+          format: uuid
+        news_id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        published_at:
+          type: string
+          format: date-time
+        source:
+          type: string
+        is_analytics:
+          type: boolean
+        relevance_score:
+          type: number
+          format: float
+        relevance_level:
+          type: string
+          enum:
+            - HIGH
+            - MEDIUM
+            - LOW
+        semantic_tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/SemanticTag"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/Source"
+
+    NewsFeedResponse:
+      type: object
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewsFeedItem"
+
+    InsightDetail:
+      type: object
+      properties:
+        insight_id:
+          type: string
+          format: uuid
+        news_id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        published_at:
+          type: string
+          format: date-time
+        source:
+          type: string
+        is_analytics:
+          type: boolean
+        relevance_score:
+          type: number
+          format: float
+        relevance_level:
+          type: string
+          enum:
+            - HIGH
+            - MEDIUM
+            - LOW
+        what_happened:
+          type: string
+        why_important_for_client:
+          type: string
+        risks:
+          type: array
+          items:
+            type: string
+        opportunities:
+          type: array
+          items:
+            type: string
+        bank_position:
+          type: string
+          nullable: true
+        semantic_tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/SemanticTag"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/Source"
+
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        timestamp:
+          type: string
+          format: date-time
+      example:
+        message: "А как это повлияет на мои поставки из Китая?"
+        timestamp: "2026-10-23T10:05:00Z"
+
+    ChatResponse:
+      type: object
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - assistant
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+      example:
+        message_id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+        role: "assistant"
+        content: "Для вашей компании сохранение ставки ЦБ косвенно влияет на логистику."
+        created_at: "2026-10-23T10:05:02Z"
+        citations: []
+
+    ChatMessage:
+      type: object
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - user
+            - assistant
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+
+    ChatHistoryResponse:
+      type: object
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+
+    ClientProfile:
+      type: object
+      properties:
+        mainokved_code:
+          type: string
+        mainokved_name:
+          type: string
+        has_credits:
+          type: boolean
+        has_ved:
+          type: boolean
+        ved_country:
+          type: string
+        revenue:
+          type: number
+        group_id:
+          type: string
+
+    InternalParams:
+      type: object
+      description: Специфичные параметры. Обязательность зависит от request_type.
+      properties:
+        news_id:
+          type: string
+        limit:
+          type: integer
+        topic_filter:
+          type: string
+        is_analytics_only:
+          type: boolean
+
+    ChatMessageDTO:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - user
+            - assistant
+        content:
+          type: string
+
+    InternalLlmRequest:
+      type: object
+      description: Используется ТОЛЬКО для request_type=chat.
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessageDTO"
+        temperature:
+          type: number
+        max_tokens:
+          type: integer
+
+    InternalGenerateRequest:
+      type: object
+      required:
+        - request_type
+        - synthetic_u
+        - client_profile
+      properties:
+        request_type:
+          type: string
+          enum:
+            - feed
+            - insight
+            - chat
+        synthetic_u:
+          type: string
+        client_profile:
+          $ref: "#/components/schemas/ClientProfile"
+        params:
+          $ref: "#/components/schemas/InternalParams"
+        llm_request:
+          $ref: "#/components/schemas/InternalLlmRequest"
+      example:
+        request_type: "insight"
+        synthetic_u: "U_80"
+        client_profile:
+          mainokved_code: "25.61"
+          has_credits: true
+        params:
+          news_id: "alfa-macro-2026-09-07"
+
+    InternalGenerateResponse:
+      type: object
+      description: Структура поля data варьируется в зависимости от request_type.
+      properties:
+        request_type:
+          type: string
+        trace_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+          description: Сырой результат генерации от Python.
+        tokens_used:
+          type: integer
+        llm_model_used:
+          type: string
+      example:
+        request_type: "insight"
+        trace_id: "123e4567-e89b-12d3-a456-426614174000"
+        data:
+          what_happened: "..."
+          risks: []
+        tokens_used: 4500
+        llm_model_used: "deepseek-chat"
