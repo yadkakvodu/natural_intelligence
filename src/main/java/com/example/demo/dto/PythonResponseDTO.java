@@ -5,9 +5,9 @@ import java.util.List;
 public class PythonResponseDTO {
     private int totalFound;
     private List<RawInsightDTO> items;
-    private int tokensInput;
-    private int tokensOutput;
-    private int processingTimeMs;
+    private Integer tokensInput;
+    private Integer tokensOutput;
+    private Integer processingTimeMs;
 
     public int getTotalFound() {
         return totalFound;

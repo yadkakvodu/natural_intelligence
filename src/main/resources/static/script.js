@@ -8,7 +8,9 @@ const initialArticle = {
   conversation: $("#conversation") ? $("#conversation").innerHTML : "",
 };
 
-// ЗАГРУЗКА НОВОСТЕЙ С БЭКЕНДА (JAVA)
+// ==========================================
+// 1. ЗАГРУЗКА НОВОСТЕЙ С БЭКЕНДА (JAVA)
+// ==========================================
 async function loadNewsFromBackend() {
   const inputField = document.getElementById('client-id-input');
   let clientId = inputField ? inputField.value.trim() : '';
@@ -45,7 +47,24 @@ async function loadNewsFromBackend() {
       const row = document.createElement('div');
       row.className = 'news-row';
 
-      row.dataset.impact = index === 0 ? 'risk' : 'opportunity';
+      // Красивое форматирование даты
+      let displayDate = 'Дата неизвестна';
+      if (item.publishedAt) {
+        try {
+          displayDate = new Date(item.publishedAt).toLocaleDateString('ru-RU', {
+            day: 'numeric', month: 'long', year: 'numeric'
+          });
+        } catch (e) {
+          displayDate = item.publishedAt;
+        }
+      }
+
+      // Определение цвета и текста бейджа
+      const isHigh = item.relevanceLevel === 'HIGH';
+      const badgeClass = isHigh ? 'critical' : 'opportunity';
+      const badgeText = isHigh ? 'критично' : 'возможность';
+
+      row.dataset.impact = isHigh ? 'risk' : 'opportunity';
       row.dataset.score = Math.round((item.relevanceScore || 0) * 100);
       row.dataset.date = item.publishedAt || "2026-10-24";
       row.dataset.news = item.newsId || `news-${index}`;
@@ -58,11 +77,9 @@ async function loadNewsFromBackend() {
             <span class="news-title">${item.title || 'Без заголовка'}</span>
             <span class="news-info">
               Релевантность <strong>${Math.round((item.relevanceScore || 0) * 100)}%</strong>
-              <span class="badge ${index === 0 ? 'critical' : 'opportunity'}">
-                ${index === 0 ? 'критично' : 'возможность'}
-              </span>
+              <span class="badge ${badgeClass}">${badgeText}</span>
             </span>
-            <time datetime="${item.publishedAt || '2026-10-24'}">${item.publishedAt || '24 октября 2026'}</time>
+            <time datetime="${item.publishedAt || '2026-10-24'}">${displayDate}</time>
           </span>
         </button>
       `;
@@ -78,10 +95,12 @@ async function loadNewsFromBackend() {
   }
 }
 
+// ==========================================
+// 2. ОБРАБОТКА КЛИКА ПО НОВОСТИ (INSIGHT)
+// ==========================================
 function attachClickListenersToNews() {
   document.querySelectorAll("[data-news]").forEach((button) => {
     button.addEventListener("click", async () => {
-      // Визуальное выделение
       document.querySelectorAll("[data-news]").forEach((item) => {
         const selected = item === button;
         item.classList.toggle("selected", selected);
@@ -91,28 +110,30 @@ function attachClickListenersToNews() {
       const clientId = document.getElementById('client-id-input').value.trim() || 'U_80';
       const newsId = button.dataset.news;
 
+      if ($("#article-heading")) $("#article-heading").textContent = "Загрузка...";
+      if ($("#article-summary")) $("#article-summary").textContent = "";
+
       try {
-        // Делаем запрос ко второму эндпоинту
         const response = await fetch(`/api/clients/${clientId}/news/${newsId}/insight`);
         if (!response.ok) throw new Error("Ошибка загрузки инсайта");
 
         const insight = await response.json();
         console.log("Детальный инсайт:", insight);
 
-        // Обновляем правую колонку
         if ($("#article-heading")) $("#article-heading").textContent = insight.title;
         if ($("#article-summary")) $("#article-summary").textContent = insight.summary;
 
         // TODO: Обновить блоки Риски/Возможности (для этого нужно добавить ID в HTML)
-
       } catch (error) {
         console.error(error);
         if ($("#article-heading")) $("#article-heading").textContent = "Ошибка загрузки";
+        if ($("#article-summary")) $("#article-summary").textContent = "Не удалось получить разбор.";
       }
     });
   });
 }
 
+// Инициализация
 document.addEventListener('DOMContentLoaded', () => {
   loadNewsFromBackend();
 
@@ -128,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// 2. ЧАТ И ИНТЕРФЕЙС (ЧАТ, ФИЛЬТРЫ, ПОПОВЕРЫ)
+// 3. ОСТАЛЬНОЙ ИНТЕРФЕЙС (ЧАТ, ФИЛЬТРЫ)
 // ==========================================
 function togglePopover(button, menu) {
   if (!button || !menu) return;
@@ -176,6 +197,7 @@ if ($("#news-sort")) $("#news-sort").addEventListener("change", filterNews);
 if ($("#filter-menu")) $("#filter-menu").addEventListener("submit", (event) => event.preventDefault());
 if ($("#filter-menu")) $("#filter-menu").addEventListener("reset", () => queueMicrotask(filterNews));
 
+// Чат
 function appendMessage(text, sender) {
   const conversation = $("#conversation");
   if (!conversation) return;
@@ -186,7 +208,6 @@ function appendMessage(text, sender) {
   avatar.className = `avatar ${sender === "user" ? "user" : "ai"}-avatar`;
 
   const image = document.createElement("img");
-  // ВАЖНО: Добавлена косая черта перед assets
   image.src = sender === "user" ? "/assets/chat-user.png" : "/assets/chat-alfa.png";
   image.width = sender === "user" ? 17 : 24;
   image.height = sender === "user" ? 20 : 30;

@@ -23,7 +23,7 @@ public class NewsController {
             @PathVariable("synthetic_u") String syntheticU,
             @RequestParam(value = "limit", defaultValue = "5") int limit,
             @RequestParam(value = "offset", defaultValue = "0") int offset,
-            @RequestParam(value = "order", defaultValue = "relevance,desc") String order, // <-- ИСПРАВЛЕНО ЗДЕСЬ
+            @RequestParam(value = "order", defaultValue = "relevance,desc") String order,
             @RequestParam(value = "is_analytics_only", required = false) Boolean isAnalyticsOnly,
             @RequestParam(value = "topic", required = false) String topic
     ) {
@@ -61,7 +61,8 @@ public class NewsController {
         if (!syntheticU.matches("^U_[A-Z0-9]+$")) {
             throw new IllegalArgumentException("Неверный формат synthetic_u. Ожидается строка вида 'U_...'");
         }
-        if (newsId == null || newsId.isBlank() || !newsId.matches("^[a-z0-9-]+$")) {
+        // Разрешаем буквы в любом регистре, цифры, дефисы и нижние подчеркивания
+        if (newsId == null || newsId.isBlank() || !newsId.matches("^[a-zA-Z0-9_-]+$")) {
             throw new IllegalArgumentException("Неверный формат news_id. Ожидается строка вида 'alfa-macro-2026-09-07'");
         }
 
@@ -89,23 +90,19 @@ public class NewsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/news/{news_id}/chat-history ")
+    @GetMapping("/news/{news_id}/chat-history")
     public ResponseEntity<ChatHistoryMessageDTO> getChatHistory(
-
             @PathVariable("synthetic_u") String syntheticU,
             @PathVariable("news_id") String newsId,
             @RequestParam(value = "limit", defaultValue = "5") int limit,
             @RequestParam(value = "offset", defaultValue = "0") int offset
-
     ) {
-
-        if (limit > 50 || offset < 0) {throw new IllegalArgumentException("неверный формат данных");}
-
+        if (limit > 50 || offset < 0) {
+            throw new IllegalArgumentException("Неверный формат данных");
+        }
 
         ChatHistoryMessageDTO response = newsService.getChatHistory(syntheticU, newsId, limit, offset);
         return ResponseEntity.ok(response);
-
-
     }
 
     @GetMapping("/news/{news_id}/sources")
@@ -113,7 +110,6 @@ public class NewsController {
             @PathVariable("synthetic_u") String syntheticU,
             @PathVariable("news_id") String newsId
     ) {
-        // Валидация
         if (!syntheticU.matches("^U_[A-Z0-9]+$")) {
             throw new IllegalArgumentException("Неверный формат synthetic_u");
         }
@@ -124,5 +120,4 @@ public class NewsController {
         List<SourceResponseDTO> response = newsService.getSources(syntheticU, newsId);
         return ResponseEntity.ok(response);
     }
-
 }

@@ -40,21 +40,19 @@ public class NewsService {
     public NewsFeedResponse generateNewsFeed(
             String syntheticU, int limit, int offset, String order, Boolean isAnalyticsOnly, String topic
     ) {
-        List<Object[]> result = clientRepository.findClientProfileRaw(syntheticU);
-        if (result.isEmpty()) {
-            throw new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена");
-        }
+        // 1. Достаем клиента из базы (старый проверенный способ)
+        Client client = clientRepository.findById(syntheticU)
+                .orElseThrow(() -> new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена"));
 
-        Object[] row = result.get(0); // Берем первую (и единственную) строку
-
+        // 2. Собираем профиль (7 полей)
         ClientProfileDTO profile = new ClientProfileDTO();
-        profile.setMainokvedCode((String) row[1]);
-        profile.setMainokvedName((String) row[1]); // Используем код как имя
-        profile.setHasCredits((Boolean) row[2]);
-        profile.setHasVed((Boolean) row[3]);
-        profile.setVedCountry((String) row[4]);
-        profile.setRevenue(row[5] != null ? ((java.math.BigDecimal) row[5]).longValue() : 0L);
-        profile.setGroupId((String) row[6]);
+        profile.setMainokvedCode(client.getMainOkvedCode());
+        profile.setMainokvedName(client.getMainOkvedCode());
+        profile.setHasCredits(Boolean.TRUE.equals(client.getClProductLoaMark()));
+        profile.setHasVed(Boolean.TRUE.equals(client.getFtsFlag()));
+        profile.setVedCountry(client.getFtsCountryName());
+        profile.setRevenue(client.getRevenueCompany() != null ? client.getRevenueCompany().longValue() : 0L);
+        profile.setGroupId(client.getGroupId());
 
         // 3. Формируем запрос к Python
         PythonRequestDTO pyRequest = new PythonRequestDTO();
@@ -126,15 +124,28 @@ public class NewsService {
 
         NewsFeedResponse response = new NewsFeedResponse();
 
-        AgentTrace trace = new AgentTrace();
-        trace.setTraceId(UUID.fromString(traceId)); // traceId, который мы генерировали
-        trace.setSyntheticU(syntheticU);
-        trace.setRequestType("feed");
-        trace.setTokensInput(pyResponse.getTokensInput());
-        trace.setTokensOutput(pyResponse.getTokensOutput());
-        trace.setCreatedAt(java.time.OffsetDateTime.now());
-// trace.setSteps(...) - тут можно сохранить JSON-шаги от Python
-        agentTraceRepository.save(trace);
+//        AgentTrace trace = new AgentTrace();
+//        trace.setTraceId(UUID.fromString(traceId)); // traceId, который мы генерировали
+//        trace.setSyntheticU(syntheticU);
+//        trace.setRequestType("feed");
+//        trace.setTokensInput(pyResponse.getTokensInput());
+//        trace.setTokensOutput(pyResponse.getTokensOutput());
+//        trace.setCreatedAt(java.time.OffsetDateTime.now());
+//// trace.setSteps(...) - тут можно сохранить JSON-шаги от Python
+//        agentTraceRepository.save(trace);
+
+        // Сохраняем трейс через нативный запрос (чтобы обойти проблему с jsonb)
+        agentTraceRepository.saveTraceRaw(
+                UUID.fromString(traceId), // traceId
+                syntheticU,               // syntheticU
+                null,                     // newsId (для ленты null, если нужен — передайте ID)
+                "feed",                   // requestType
+                "{}",                     // steps (пустой JSON)
+// Замените эти две строки:
+                pyResponse.getTokensInput(),
+                pyResponse.getTokensOutput(),
+                java.time.OffsetDateTime.now()
+        );
         response.setItems(finalItems);
 
         Pagination pagination = new Pagination();
