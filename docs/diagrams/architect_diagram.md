@@ -43,7 +43,7 @@ graph TD
 
     FE -- "1. GET /news-feed" --> J_API
     FE -- "2. GET /insight" --> J_API
-    FE -- "3. POST /chat {message}" --> J_API
+    FE -- "3. POST /chat message" --> J_API
     FE -- "4. GET /chat-history" --> J_API
     FE -- "5. GET /sources" --> J_API
 
@@ -60,7 +60,7 @@ graph TD
     P_API -- "Request Type: feed/insight/chat" --> P_RAG
     P_API -- "Request Type: chat" --> P_LLM
     
-    P_RAG -- "Vector Search <=> + Rule Boosting" --> DB
+    P_RAG -- "Vector Search + Rule Boosting" --> DB
     P_RAG -- "News Candidates" --> P_LLM
     
     P_LLM -- "Generate Content" --> LLM_API
