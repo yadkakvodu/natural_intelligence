@@ -3,10 +3,13 @@ package com.example.demo.service;
 import com.example.demo.client.PythonClient;
 import com.example.demo.dto.*;
 import com.example.demo.entity.Client;
+import com.example.demo.entity.Message;
 import com.example.demo.entity.News;
 import com.example.demo.repository.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-
+import org.springframework.data.domain.Pageable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -16,13 +19,17 @@ public class NewsService {
 
     private final ClientRepository clientRepository;
     private final NewsRepository newsRepository;
-    private final PythonClient pythonClient; // <-- ДОБАВЛЕНО
+    private final PythonClient pythonClient;
+    private final MessageRepository messageRepository;
+
 
     // <-- ДОБАВЛЕНО В КОНСТРУКТОР
-    public NewsService(ClientRepository clientRepository, NewsRepository newsRepository, PythonClient pythonClient) {
+    public NewsService(ClientRepository clientRepository, NewsRepository newsRepository,
+                       PythonClient pythonClient, MessageRepository messageRepository) {
         this.clientRepository = clientRepository;
         this.newsRepository = newsRepository;
         this.pythonClient = pythonClient;
+        this.messageRepository = messageRepository;
     }
 
     public NewsFeedResponse generateNewsFeed(
@@ -187,35 +194,63 @@ public class NewsService {
     }
 
     public ChatResponseDTO generateChatAnswer(String syntheticU, String newsId, String message) {
-        // 1. Проверяем клиента
-        Client client = clientRepository.findById(syntheticU)
+        return null;
+    }
+
+
+    public ChatHistoryMessageDTO getChatHistory(String syntheticU, String newsId, int limit, int offset) {
+
+        // 1. Валидация существования клиента и новости
+        clientRepository.findById(syntheticU)
                 .orElseThrow(() -> new RuntimeException("Компания с идентификатором " + syntheticU + " не найдена"));
 
-        // 2. Проверяем новость
-        News news = newsRepository.findById(newsId)
+        newsRepository.findById(newsId)
                 .orElseThrow(() -> new RuntimeException("Новость с идентификатором " + newsId + " не найдена"));
 
-        // 3. Собираем профиль (как всегда)
-        ClientProfileDTO profile = new ClientProfileDTO();
-        // ... (заполняем 7 полей, как в первом методе)
+        // 2. Формируем правильный ID диалога (с разделителем '_')
+        String conversationId = syntheticU + "_" + newsId;
 
-        // 4. Формируем запрос в Python
-        PythonRequestDTO pyRequest = new PythonRequestDTO();
-        pyRequest.setRequestType("chat");
-        pyRequest.setSyntheticU(syntheticU);
-        pyRequest.setClientProfile(profile);
+        // 3. Настраиваем пагинацию для базы данных
+        // offset / limit дает нам номер страницы (например, offset=0, limit=20 -> страница 0)
+        int pageNumber = offset / limit;
+        Pageable pageable = PageRequest.of(pageNumber, limit);
 
-        ParamsDTO params = new ParamsDTO();
-        params.setNewsId(newsId);
-        params.setMessage(message);
-        pyRequest.setParams(params);
+        // 4. Идем в базу данных
+        Page<Message> messagePage = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId, pageable);
 
-        // 5. Зовем Python
-        String traceId = UUID.randomUUID().toString();
-        ChatResponseDTO pyResponse = pythonClient.generateChatAnswer(pyRequest, traceId);
+        // 5. Трансформируем сущности из базы в DTO для фронтенда
+        List<ChatHistoryDTO> items = new ArrayList<>();
 
-        // 6. TODO: Сохранить сообщение в базу (в таблицу messages)
-        // Пока просто возвращаем то, что ответил Python
-        return pyResponse;
+        for (Message msg : messagePage.getContent()) {
+            ChatHistoryDTO item = new ChatHistoryDTO();
+
+            // Безопасно конвертируем UUID в String
+            item.setMessageId(msg.getMessageId() != null ? msg.getMessageId().toString() : null);
+            item.setRole(msg.getRole());
+            item.setContent(msg.getContent());
+
+            // Форматируем дату в ISO 8601 (например: 2026-10-24T10:00:00Z)
+            if (msg.getCreatedAt() != null) {
+                item.setCreatedAt(msg.getCreatedAt().toString());
+            }
+
+            // TODO: Парсинг citations (ссылок на источники), если они есть в виде JSON-строки
+            // item.setCitations(...);
+
+            items.add(item);
+        }
+
+        // 6. Собираем финальный ответ с пагинацией
+        ChatHistoryMessageDTO response = new ChatHistoryMessageDTO();
+
+        Pagination pagination = new Pagination();
+        pagination.setLimit(limit);
+        pagination.setOffset(offset);
+        pagination.setCount(messagePage.getTotalElements()); // Общее количество сообщений в базе
+
+        response.setPagination(pagination);
+        response.setItems(items);
+
+        return response;
     }
 }

@@ -8,9 +8,7 @@ const initialArticle = {
   conversation: $("#conversation") ? $("#conversation").innerHTML : "",
 };
 
-// ==========================================
-// 1. ЗАГРУЗКА НОВОСТЕЙ С БЭКЕНДА (JAVA)
-// ==========================================
+// ЗАГРУЗКА НОВОСТЕЙ С БЭКЕНДА (JAVA)
 async function loadNewsFromBackend() {
   const inputField = document.getElementById('client-id-input');
   let clientId = inputField ? inputField.value.trim() : '';
@@ -51,9 +49,6 @@ async function loadNewsFromBackend() {
       row.dataset.score = Math.round((item.relevanceScore || 0) * 100);
       row.dataset.date = item.publishedAt || "2026-10-24";
       row.dataset.news = item.newsId || `news-${index}`;
-
-      // ВАЖНО: Путь к картинке начинается с /assets/
-      // Если картинки для конкретной новости нет, ставим дефолтную bank-building.png
       const imageUrl = item.imageUrl ? item.imageUrl : '/assets/bank-building.png';
 
       row.innerHTML = `

@@ -1,9 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.ChatRequestDTO;
-import com.example.demo.dto.ChatResponseDTO;
-import com.example.demo.dto.NewsFeedResponse;
-import com.example.demo.dto.NewsInsightResponse;
+import com.example.demo.dto.*;
 import com.example.demo.service.NewsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +23,7 @@ public class NewsController {
             @PathVariable("synthetic_u") String syntheticU,
             @RequestParam(value = "limit", defaultValue = "5") int limit,
             @RequestParam(value = "offset", defaultValue = "0") int offset,
-            @RequestParam(value = "order", defaultValue = "relevance_score,desc") String order,
+            @RequestParam(value = "order", defaultValue = "relevance,desc") String order, // <-- ИСПРАВЛЕНО ЗДЕСЬ
             @RequestParam(value = "is_analytics_only", required = false) Boolean isAnalyticsOnly,
             @RequestParam(value = "topic", required = false) String topic
     ) {
@@ -58,12 +55,9 @@ public class NewsController {
 
     @GetMapping("/news/{news_id}/insight")
     public ResponseEntity<NewsInsightResponse> getPersonalizedBusinessInsight(
-
             @PathVariable("synthetic_u") String syntheticU,
             @PathVariable("news_id") String newsId
-
     ) {
-
         if (!syntheticU.matches("^U_[A-Z0-9]+$")) {
             throw new IllegalArgumentException("Неверный формат synthetic_u. Ожидается строка вида 'U_...'");
         }
@@ -73,7 +67,6 @@ public class NewsController {
 
         NewsInsightResponse response = newsService.generateBusinessInsight(syntheticU, newsId);
         return ResponseEntity.ok(response);
-
     }
 
     @PostMapping("/news/{news_id}/chat")
@@ -96,4 +89,22 @@ public class NewsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/news/{news_id}/chat-history ")
+    public ResponseEntity<ChatHistoryMessageDTO> getChatHistory(
+
+            @PathVariable("synthetic_u") String syntheticU,
+            @PathVariable("news_id") String newsId,
+            @RequestParam(value = "limit", defaultValue = "5") int limit,
+            @RequestParam(value = "offset", defaultValue = "0") int offset
+
+    ) {
+
+        if (limit > 50 || offset < 0) {throw new IllegalArgumentException("неверный формат данных");}
+
+
+        ChatHistoryMessageDTO response = newsService.getChatHistory(syntheticU, newsId, limit, offset);
+        return ResponseEntity.ok(response);
+
+
+    }
 }
