@@ -15,13 +15,13 @@ public class BudgetGuardService {
         this.traceRepository = traceRepository;
     }
 
-    public void checkBudget(int estimatedTokensToSpend) {
-        Long spentTokens = traceRepository.getTotalTokensInLast24Hours();
-
-        if (spentTokens + estimatedTokensToSpend > MAX_TOKENS_PER_DAY) {
-            // Выбрасываем ошибку, которую перехватит GlobalExceptionHandler
-            throw new RuntimeException("Превышен лимит бюджета LLM. Попробуйте позже.");
-            // (В идеале здесь нужно выбросить кастомное исключение BudgetExceededException и вернуть 429)
-        }
-    }
+//    public void checkBudget(int estimatedTokensToSpend) {
+//        Long spentTokens = traceRepository.getTotalTokensInLast24Hours();
+//
+//        if (spentTokens + estimatedTokensToSpend > MAX_TOKENS_PER_DAY) {
+//            // Выбрасываем ошибку, которую перехватит GlobalExceptionHandler
+//            throw new RuntimeException("Превышен лимит бюджета LLM. Попробуйте позже.");
+//            // (В идеале здесь нужно выбросить кастомное исключение BudgetExceededException и вернуть 429)
+//        }
+//    }
 }

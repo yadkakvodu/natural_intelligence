@@ -1,0 +1,47 @@
+services:
+  # База данных
+  db:
+    image: postgres:15-alpine
+    container_name: ni_database
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: natural_intelligence
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docs/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Бэкенд (Java/Spring)
+  backend:
+    build:
+      context: ./backend-java
+      dockerfile: Dockerfile
+    container_name: ni_backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/natural_intelligence
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      PYTHON_AI_URL: http://ai-core:8000
+    depends_on:
+      - db
+      - ai-core
+
+  # AI Core (Python)
+  ai-core:
+    build:
+      context: ./ai-core-python
+      dockerfile: Dockerfile
+    container_name: ni_ai_core
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/natural_intelligence
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

@@ -12,6 +12,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleBadRequest(IllegalArgumentException ex) {
+        ex.printStackTrace(); // <--- ДОБАВЬТЕ ЭТУ СТРОКУ
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("errorMessage", ex.getMessage()));
     }
@@ -19,6 +20,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleNotFound(RuntimeException ex) {
         // Если ошибка связана с тем, что что-то не найдено
+        ex.printStackTrace(); // <--- ДОБАВЬТЕ ЭТУ СТРОКУ
+
         if (ex.getMessage() != null && ex.getMessage().contains("не найдена")) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("errorMessage", ex.getMessage()));

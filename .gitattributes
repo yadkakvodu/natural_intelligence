@@ -1,0 +1,22 @@
+# Автоматическая обработка переносов строк
+* text=auto
+
+# Явно указать типы файлов
+*.java text
+*.py text
+*.md text
+*.yml text
+*.yaml text
+*.sql text
+*.html text
+*.css text
+*.js text
+*.properties text
+*.xml text
+
+# Бинарные файлы (картинки и т.д.)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
