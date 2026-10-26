@@ -166,12 +166,5 @@ Python является «интеллектуальным ядром». Он **
 | Infrastructure | Docker + Docker Compose | 2.x+ |
 ```
 
-### Как добавить в репозиторий:
-1. Создай файл `architecture.md` внутри папки `docs/`.
-2. Вставь туда весь текст выше.
-3. Закоммить и запушь:
-```bash
-git add docs/architecture.md
-git commit -m "docs: add detailed architecture and internal contract specs"
 git push
 ```
