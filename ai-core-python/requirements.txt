@@ -33,6 +33,9 @@ pydantic-settings==2.1.0
 pypdf==3.17.2
 nltk==3.8.1
 sentence-transformers==2.2.2
+# sentence-transformers 2.2.2 imports `cached_download`, removed in huggingface-hub 0.26
+huggingface-hub==0.25.2
+transformers==4.44.2
 
 # ============================================
 # Async & Utilities

@@ -4,6 +4,7 @@ import com.example.demo.dto.ChatResponseDTO;
 import com.example.demo.dto.PythonInsightResponseDTO;
 import com.example.demo.dto.PythonRequestDTO;
 import com.example.demo.dto.PythonResponseDTO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -15,17 +16,13 @@ public class PythonClient {
 
     private final RestClient restClient;
 
-    public PythonClient() {
+    public PythonClient(@Value("${python.ai.url:http://localhost:8000}") String pythonBaseUrl) {
         // 1. Настраиваем таймауты согласно ТЗ (п. 5)
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(10));
-        requestFactory.setReadTimeout(Duration.ofSeconds(60)); // <--- УВЕЛИЧЬТЕ ДО 60
+        requestFactory.setReadTimeout(Duration.ofSeconds(60));
 
-        // 2. Настраиваем базовый URL.
-        // ВАЖНО: Когда друг даст вам IP, вы замените строку ниже.
-        // Пока оставляем localhost:8000, чтобы вы могли запустить Python у себя для теста.
-        String pythonBaseUrl = "http://localhost:8000";
-
+        // 2. Базовый URL AI Core приходит из конфигурации (PYTHON_AI_URL).
         this.restClient = RestClient.builder()
                 .baseUrl(pythonBaseUrl)
                 .requestFactory(requestFactory)
