@@ -18,14 +18,34 @@ from dotenv import load_dotenv
 # ==========================================
 load_dotenv()
 
-DB_CONFIG = {
-    "dbname": os.getenv("PG_DB", "defaultdb"),
-    "user": os.getenv("PG_USER", "avnadmin"),
-    "password": os.getenv("PG_PASS"),
-    "host": os.getenv("PG_HOST", "localhost"),
-    "port": os.getenv("PG_PORT", "13266"),
-    "sslmode": "require"
-}
+
+def _db_config() -> dict:
+    """DATABASE_URL (docker-compose) or PG_* variables (local run)."""
+    url = os.getenv("DATABASE_URL")
+    if url:
+        from urllib.parse import urlparse, parse_qs
+
+        parsed = urlparse(url)
+        query = parse_qs(parsed.query)
+        return {
+            "dbname": parsed.path.lstrip("/") or "natural_intelligence",
+            "user": parsed.username,
+            "password": parsed.password,
+            "host": parsed.hostname or "db",
+            "port": parsed.port or 5432,
+            "sslmode": query.get("sslmode", [os.getenv("PG_SSLMODE", "prefer")])[0],
+        }
+    return {
+        "dbname": os.getenv("PG_DB", "natural_intelligence"),
+        "user": os.getenv("PG_USER", "user"),
+        "password": os.getenv("PG_PASS", "password"),
+        "host": os.getenv("PG_HOST", "db"),
+        "port": os.getenv("PG_PORT", "5432"),
+        "sslmode": os.getenv("PG_SSLMODE", "prefer"),
+    }
+
+
+DB_CONFIG = _db_config()
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
@@ -37,6 +57,11 @@ app = FastAPI(title="Alfa News AI Agent Core (Gateway)", version="1.0")
 
 print("📥 Загрузка модели эмбеддингов BAAI/bge-m3...")
 embedding_model = SentenceTransformer("BAAI/bge-m3")
+
+
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
 
 
 # ==========================================

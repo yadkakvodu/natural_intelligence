@@ -1,47 +1,74 @@
 services:
-  # База данных
+  # База данных: PostgreSQL 18 + pgvector, данные восстанавливаются из db/backup.sql.gz
   db:
-    image: postgres:15-alpine
-    container_name: ni_database
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    image: ni-db:latest
+    container_name: ni_db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: natural_intelligence
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-natural_intelligence}
     ports:
-      - "5432:5432"
+      # 5432/5433 already taken on this host (local PostgreSQL 17);
+      # inside the compose network the DB is still available as db:5432.
+      - "127.0.0.1:${DB_HOST_PORT:-55432}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./docs/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # PostgreSQL 18 image keeps PGDATA under /var/lib/postgresql/18/docker
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-natural_intelligence}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
 
   # Бэкенд (Java/Spring)
   backend:
     build:
       context: ./backend-java
       dockerfile: Dockerfile
+    image: ni-backend:latest
     container_name: ni_backend
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/natural_intelligence
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-natural_intelligence}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-password}
       PYTHON_AI_URL: http://ai-core:8000
     depends_on:
-      - db
-      - ai-core
+      db:
+        condition: service_healthy
+      ai-core:
+        condition: service_started
+    restart: unless-stopped
 
   # AI Core (Python)
   ai-core:
     build:
       context: ./ai-core-python
       dockerfile: Dockerfile
+    image: ni-ai-core:latest
     container_name: ni_ai_core
     ports:
-      - "8000:8000"
+      - "${AI_CORE_PORT:-8000}:8000"
     environment:
-      DATABASE_URL: postgresql://user:password@db:5432/natural_intelligence
+      DATABASE_URL: postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-natural_intelligence}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GATEWAY_BASE_URL: ${GATEWAY_BASE_URL:-https://changellenge.up.railway.app/v1}
+      MODEL_NAME: ${MODEL_NAME:-deepseek/deepseek-v4.1-flash}
+      HF_HOME: /models
+    volumes:
+      # кэш модели bge-m3 (~2.3 GB) переживает пересоздание контейнера
+      - hf_cache:/models
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:
+  hf_cache:
