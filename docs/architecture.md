@@ -164,7 +164,4 @@ Python является «интеллектуальным ядром». Он **
 | LLM Fallback | Qwen3.6 35B A3B | API |
 | Embeddings | BAAI/bge-m3 | 1024d |
 | Infrastructure | Docker + Docker Compose | 2.x+ |
-```
 
-git push
-```
